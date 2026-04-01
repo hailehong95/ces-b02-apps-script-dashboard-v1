@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sales Analytics Dashboard</title>
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <!-- Google Charts -->
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+  <!-- Custom CSS -->
+  <?!= include('CSS'); ?>
+</head>
+
+<body>
+
+  <!-- ── TOP NAVBAR ───────────────────────────────────────────── -->
+  <nav class="navbar navbar-dark sticky-top">
+    <div class="container-fluid">
+      <span class="navbar-brand mb-0 h1">
+        <i class="bi bi-bar-chart-fill me-2"></i>Sales Analytics Dashboard
+      </span>
+      <span class="text-light small opacity-75" id="lastUpdated"></span>
+    </div>
+  </nav>
+
+  <!-- ── MAIN WRAPPER ─────────────────────────────────────────── -->
+  <div class="container-fluid py-4 px-4">
+
+    <!-- Loading overlay -->
+    <div id="loadingOverlay">
+      <div class="spinner-border text-primary" style="width:3rem;height:3rem;" role="status"></div>
+      <p class="mt-3 fw-semibold text-secondary">Loading dashboard data…</p>
+    </div>
+
+    <!-- Dashboard content (hidden until data ready) -->
+    <div id="dashboardContent" style="display:none;">
+
+      <!-- ── KPI CARDS ─────────────────────────────────────────── -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="kpi-card card h-100 shadow-sm border-0">
+            <div class="card-body">
+              <div class="kpi-icon bg-primary-subtle text-primary"><i class="bi bi-receipt-cutoff"></i></div>
+              <div class="kpi-label">Total Transactions</div>
+              <div class="kpi-value" id="kpiTransactions">—</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="kpi-card card h-100 shadow-sm border-0">
+            <div class="card-body">
+              <div class="kpi-icon bg-success-subtle text-success"><i class="bi bi-currency-dollar"></i></div>
+              <div class="kpi-label">Total Revenue</div>
+              <div class="kpi-value" id="kpiRevenue">—</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="kpi-card card h-100 shadow-sm border-0">
+            <div class="card-body">
+              <div class="kpi-icon bg-warning-subtle text-warning"><i class="bi bi-box-seam"></i></div>
+              <div class="kpi-label">Total Quantity Sold</div>
+              <div class="kpi-value" id="kpiQuantity">—</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="kpi-card card h-100 shadow-sm border-0">
+            <div class="card-body">
+              <div class="kpi-icon bg-danger-subtle text-danger"><i class="bi bi-star-half"></i></div>
+              <div class="kpi-label">Avg Customer Rating</div>
+              <div class="kpi-value" id="kpiRating">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ROW 2: Line + Pie ──────────────────────────────────── -->
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-lg-8">
+          <div class="card shadow-sm border-0 h-100">
+            <div class="card-header d-flex align-items-center gap-2">
+              <i class="bi bi-graph-up text-primary"></i>
+              <span class="fw-semibold">Monthly Revenue Trend (2023)</span>
+            </div>
+            <div class="card-body p-2">
+              <div id="chart_monthly" class="chart-container"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="card shadow-sm border-0 h-100">
+            <div class="card-header d-flex align-items-center gap-2">
+              <i class="bi bi-pie-chart text-success"></i>
+              <span class="fw-semibold">Revenue by Category</span>
+            </div>
+            <div class="card-body p-2">
+              <div id="chart_category" class="chart-container"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ROW 3: Bar + Column + Column ──────────────────────── -->
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-md-4">
+          <div class="card shadow-sm border-0 h-100">
+            <div class="card-header d-flex align-items-center gap-2">
+              <i class="bi bi-map text-info"></i>
+              <span class="fw-semibold">Revenue by Region</span>
+            </div>
+            <div class="card-body p-2">
+              <div id="chart_region" class="chart-container"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="card shadow-sm border-0 h-100">
+            <div class="card-header d-flex align-items-center gap-2">
+              <i class="bi bi-star text-warning"></i>
+              <span class="fw-semibold">Customer Rating Distribution</span>
+            </div>
+            <div class="card-body p-2">
+              <div id="chart_rating" class="chart-container"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="card shadow-sm border-0 h-100">
+            <div class="card-header d-flex align-items-center gap-2">
+              <i class="bi bi-tags text-danger"></i>
+              <span class="fw-semibold">Discount Level vs Avg Revenue</span>
+            </div>
+            <div class="card-body p-2">
+              <div id="chart_discount" class="chart-container"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ROW 4: Stacked Bar full-width ─────────────────────── -->
+      <div class="row g-3">
+        <div class="col-12">
+          <div class="card shadow-sm border-0">
+            <div class="card-header d-flex align-items-center gap-2">
+              <i class="bi bi-people text-secondary"></i>
+              <span class="fw-semibold">Member vs Non-Member Orders by Category</span>
+            </div>
+            <div class="card-body p-2">
+              <div id="chart_member" class="chart-container" style="height:280px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /dashboardContent -->
+  </div><!-- /container-fluid -->
+
+  <!-- ── Bootstrap JS ─────────────────────────────────────────── -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Custom JS -->
+  <?!= include('JavaScript'); ?>
+
+</body>
+
+</html>

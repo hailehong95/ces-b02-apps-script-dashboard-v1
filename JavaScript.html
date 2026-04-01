@@ -1,0 +1,275 @@
+<script>
+  // ============================================================
+  //  JavaScript.html
+  //  - Loads Google Charts
+  //  - Calls server-side functions via google.script.run
+  //  - Renders all 6 charts + KPI cards
+  //  - Handles errors gracefully (no silent failures)
+  // ============================================================
+
+  google.charts.load('current', { packages: ['corechart', 'bar'] });
+  google.charts.setOnLoadCallback(initDashboard);
+
+  // ── Palette ──────────────────────────────────────────────────
+  var PALETTE = ['#4f63d2', '#38b2ac', '#ed8936', '#e53e3e', '#805ad5', '#38a169', '#d69e2e'];
+
+  // ── State tracker ────────────────────────────────────────────
+  var chartsReady = 0;
+  var chartsTotal = 6;
+  var kpiReady = false;
+
+  function checkAllReady() {
+    chartsReady++;
+    if (chartsReady >= chartsTotal && kpiReady) showDashboard();
+  }
+
+  function showDashboard() {
+    document.getElementById('loadingOverlay').style.display = 'none';
+    document.getElementById('dashboardContent').style.display = 'block';
+  }
+
+  // ── Bootstrap all data fetches ────────────────────────────────
+  function initDashboard() {
+
+    // Timestamp
+    var now = new Date();
+    document.getElementById('lastUpdated').textContent =
+      'Updated: ' + now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
+      ' ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+    // KPI
+    google.script.run
+      .withSuccessHandler(renderKpi)
+      .withFailureHandler(function (err) { showKpiError(err); kpiReady = true; checkAllReady(); })
+      .getKpiData();
+
+    // Charts
+    google.script.run
+      .withSuccessHandler(function (d) { renderLineChart('chart_monthly', d, 'Monthly Revenue (USD)'); checkAllReady(); })
+      .withFailureHandler(function (err) { showChartError('chart_monthly', err); checkAllReady(); })
+      .getMonthlySales();
+
+    google.script.run
+      .withSuccessHandler(function (d) { renderPieChart('chart_category', d); checkAllReady(); })
+      .withFailureHandler(function (err) { showChartError('chart_category', err); checkAllReady(); })
+      .getSalesByCategory();
+
+    google.script.run
+      .withSuccessHandler(function (d) { renderBarChart('chart_region', d); checkAllReady(); })
+      .withFailureHandler(function (err) { showChartError('chart_region', err); checkAllReady(); })
+      .getSalesByRegion();
+
+    google.script.run
+      .withSuccessHandler(function (d) { renderRatingChart('chart_rating', d); checkAllReady(); })
+      .withFailureHandler(function (err) { showChartError('chart_rating', err); checkAllReady(); })
+      .getRatingDistribution();
+
+    google.script.run
+      .withSuccessHandler(function (d) { renderDiscountChart('chart_discount', d); checkAllReady(); })
+      .withFailureHandler(function (err) { showChartError('chart_discount', err); checkAllReady(); })
+      .getDiscountImpact();
+
+    google.script.run
+      .withSuccessHandler(function (d) { renderMemberChart('chart_member', d); checkAllReady(); })
+      .withFailureHandler(function (err) { showChartError('chart_member', err); checkAllReady(); })
+      .getMemberBreakdown();
+  }
+
+  // ============================================================
+  //  KPI Renderer
+  // ============================================================
+  function renderKpi(data) {
+    try {
+      document.getElementById('kpiTransactions').textContent =
+        Number(data.totalTransactions).toLocaleString();
+      document.getElementById('kpiRevenue').textContent =
+        '$' + formatNumber(data.totalRevenue);
+      document.getElementById('kpiQuantity').textContent =
+        Number(data.totalQuantity).toLocaleString();
+      document.getElementById('kpiRating').textContent =
+        Number(data.avgRating).toFixed(2) + ' / 5';
+    } catch (e) {
+      console.error('KPI render error:', e);
+    }
+    kpiReady = true;
+    if (chartsReady >= chartsTotal) showDashboard();
+  }
+
+  function showKpiError(err) {
+    console.error('KPI fetch error:', err);
+    ['kpiTransactions', 'kpiRevenue', 'kpiQuantity', 'kpiRating'].forEach(function (id) {
+      document.getElementById(id).textContent = 'Error';
+    });
+  }
+
+  // ============================================================
+  //  Chart Renderers
+  // ============================================================
+
+  // 1. Monthly Revenue Line Chart
+  function renderLineChart(containerId, rows, title) {
+    try {
+      var data = google.visualization.arrayToDataTable(rows);
+      var opts = {
+        title: '',
+        curveType: 'function',
+        legend: { position: 'none' },
+        chartArea: { left: 65, right: 20, top: 15, bottom: 50 },
+        hAxis: { textStyle: { fontSize: 11 }, slantedText: true, slantedTextAngle: 35 },
+        vAxis: {
+          format: '$#,###',
+          textStyle: { fontSize: 11 },
+          gridlines: { color: '#f0f0f0' },
+          baselineColor: '#e0e0e0'
+        },
+        lineWidth: 2.5,
+        pointSize: 5,
+        colors: ['#4f63d2'],
+        tooltip: { isHtml: true },
+        backgroundColor: 'transparent',
+        areaOpacity: 0.15,
+        series: { 0: { areaOpacity: 0.1 } }
+      };
+      var chart = new google.visualization.AreaChart(document.getElementById(containerId));
+      chart.draw(data, opts);
+    } catch (e) {
+      showChartError(containerId, e);
+    }
+  }
+
+  // 2. Revenue by Category Pie Chart
+  function renderPieChart(containerId, rows) {
+    try {
+      var data = google.visualization.arrayToDataTable(rows);
+      var opts = {
+        legend: { position: 'bottom', textStyle: { fontSize: 11 } },
+        chartArea: { left: 10, right: 10, top: 10, bottom: 50 },
+        colors: PALETTE,
+        pieHole: 0.38,
+        tooltip: { isHtml: true },
+        backgroundColor: 'transparent',
+        pieSliceTextStyle: { fontSize: 11 }
+      };
+      var chart = new google.visualization.PieChart(document.getElementById(containerId));
+      chart.draw(data, opts);
+    } catch (e) {
+      showChartError(containerId, e);
+    }
+  }
+
+  // 3. Revenue by Region Bar Chart
+  function renderBarChart(containerId, rows) {
+    try {
+      var data = google.visualization.arrayToDataTable(rows);
+      var opts = {
+        legend: { position: 'none' },
+        chartArea: { left: 70, right: 20, top: 15, bottom: 40 },
+        hAxis: { format: '$#,###', textStyle: { fontSize: 11 }, gridlines: { color: '#f0f0f0' } },
+        vAxis: { textStyle: { fontSize: 12 } },
+        colors: ['#38b2ac'],
+        bars: 'horizontal',
+        tooltip: { isHtml: true },
+        backgroundColor: 'transparent'
+      };
+      var chart = new google.visualization.BarChart(document.getElementById(containerId));
+      chart.draw(data, opts);
+    } catch (e) {
+      showChartError(containerId, e);
+    }
+  }
+
+  // 4. Rating Distribution Column Chart (styled column, role-based color)
+  function renderRatingChart(containerId, rows) {
+    try {
+      var data = google.visualization.arrayToDataTable(rows);
+      var opts = {
+        legend: { position: 'none' },
+        chartArea: { left: 50, right: 10, top: 15, bottom: 45 },
+        hAxis: { textStyle: { fontSize: 12 } },
+        vAxis: { textStyle: { fontSize: 11 }, gridlines: { color: '#f0f0f0' } },
+        tooltip: { isHtml: true },
+        bar: { groupWidth: '60%' },
+        backgroundColor: 'transparent'
+      };
+      var chart = new google.visualization.ColumnChart(document.getElementById(containerId));
+      chart.draw(data, opts);
+    } catch (e) {
+      showChartError(containerId, e);
+    }
+  }
+
+  // 5. Discount Impact Column Chart
+  function renderDiscountChart(containerId, rows) {
+    try {
+      var data = google.visualization.arrayToDataTable(rows);
+      var opts = {
+        legend: { position: 'none' },
+        chartArea: { left: 65, right: 10, top: 15, bottom: 45 },
+        hAxis: { title: 'Discount Rate', textStyle: { fontSize: 12 } },
+        vAxis: { format: '$#,###', textStyle: { fontSize: 11 }, gridlines: { color: '#f0f0f0' } },
+        colors: ['#ed8936'],
+        bar: { groupWidth: '55%' },
+        tooltip: { isHtml: true },
+        backgroundColor: 'transparent'
+      };
+      var chart = new google.visualization.ColumnChart(document.getElementById(containerId));
+      chart.draw(data, opts);
+    } catch (e) {
+      showChartError(containerId, e);
+    }
+  }
+
+  // 6. Member vs Non-Member Stacked Bar Chart
+  function renderMemberChart(containerId, rows) {
+    try {
+      var data = google.visualization.arrayToDataTable(rows);
+      var opts = {
+        legend: { position: 'top', alignment: 'end', textStyle: { fontSize: 12 } },
+        chartArea: { left: 90, right: 30, top: 45, bottom: 40 },
+        hAxis: { textStyle: { fontSize: 12 } },
+        vAxis: { textStyle: { fontSize: 11 }, gridlines: { color: '#f0f0f0' } },
+        isStacked: true,
+        colors: ['#4f63d2', '#f6ad55'],
+        bar: { groupWidth: '55%' },
+        tooltip: { isHtml: true },
+        backgroundColor: 'transparent'
+      };
+      var chart = new google.visualization.BarChart(document.getElementById(containerId));
+      chart.draw(data, opts);
+    } catch (e) {
+      showChartError(containerId, e);
+    }
+  }
+
+  // ============================================================
+  //  Error Helper
+  // ============================================================
+  function showChartError(containerId, err) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    el.innerHTML =
+      '<div class="chart-error">' +
+      '<i class="bi bi-exclamation-triangle-fill"></i>' +
+      'Failed to load chart: ' + (err.message || String(err)) +
+      '</div>';
+    console.error('Chart error [' + containerId + ']:', err);
+  }
+
+  // ============================================================
+  //  Util
+  // ============================================================
+  function formatNumber(n) {
+    if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+    return Number(n).toFixed(2);
+  }
+
+  // ── Re-draw all charts on window resize (debounced) ──────────
+  var resizeTimer;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      initDashboard();
+    }, 400);
+  });
+</script>

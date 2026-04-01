@@ -1,0 +1,117 @@
+<style>
+  /* ── Base ─────────────────────────────────────────────────── */
+  body {
+    background: #f0f2f5;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── Navbar ───────────────────────────────────────────────── */
+  .navbar {
+    background: linear-gradient(135deg, #1a1f5e 0%, #2d3a8c 100%);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+    padding: 0.75rem 1.5rem;
+  }
+
+  .navbar-brand {
+    font-size: 1.1rem;
+    letter-spacing: 0.02em;
+  }
+
+  /* ── Loading overlay ──────────────────────────────────────── */
+  #loadingOverlay {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+  }
+
+  /* ── KPI Cards ────────────────────────────────────────────── */
+  .kpi-card {
+    border-radius: 12px !important;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .kpi-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+  }
+
+  .kpi-card .card-body {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1.2rem 1.25rem;
+  }
+
+  .kpi-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .kpi-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #6c757d;
+    font-weight: 600;
+    margin-bottom: 0.2rem;
+  }
+
+  .kpi-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #1a202c;
+    line-height: 1.2;
+  }
+
+  /* ── Chart cards ──────────────────────────────────────────── */
+  .card {
+    border-radius: 12px !important;
+  }
+
+  .card-header {
+    background: #fff;
+    border-bottom: 1px solid #f0f0f0;
+    padding: 0.85rem 1.25rem;
+    border-radius: 12px 12px 0 0 !important;
+    font-size: 0.9rem;
+    color: #2d3748;
+  }
+
+  /* ── Chart containers ─────────────────────────────────────── */
+  .chart-container {
+    width: 100%;
+    height: 300px;
+    min-height: 240px;
+  }
+
+  /* ── Responsive tweaks ────────────────────────────────────── */
+  @media (max-width: 576px) {
+    .kpi-value {
+      font-size: 1.25rem;
+    }
+
+    .chart-container {
+      height: 240px;
+    }
+  }
+
+  /* ── Error state ──────────────────────────────────────────── */
+  .chart-error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #dc3545;
+    font-size: 0.85rem;
+    gap: 0.4rem;
+  }
+</style>
